@@ -9,7 +9,6 @@ extern "C" {
 const char* ssid = "ESP-DRO-01";
 const char* password = "3E345AF3213F";
 
-String serverName = "";
 unsigned long lastTime = 0;
 unsigned long timerDelay = 200;
 
@@ -27,6 +26,7 @@ LiquidCrystal lcd(rs, en, d4, d5, d6, d7);
 
 boolean waitingDHCP=false;
 char last_mac[18];
+String serverName[] = { "", "", "", "" };
 
 boolean deviceIP(char* mac_device, String &cb) {
 
@@ -40,8 +40,8 @@ boolean deviceIP(char* mac_device, String &cb) {
       waitingDHCP=false;
       cb = station_ip;
 
-      if (station_id == 0) {
-        serverName = String("http://") + station_ip + String("/pos");
+      if (station_id < 4) {
+        serverName[station_id] = String("http://") + station_ip + String("/pos");
       }
       
       return true;
@@ -118,71 +118,86 @@ void loop() {
 
   
   // put your main code here, to run repeatedly:
-  if (serverName.length() > 0 && (millis() - lastTime) > timerDelay) {
-      WiFiClient client;
-      HTTPClient http;
-
-      String serverPath = serverName;
-
-      Serial.println(serverPath.c_str());
-      // Your Domain name with URL path or IP address with path
-      http.begin(client, serverPath.c_str());
+  for (int station_id = 0;station_id < 4; station_id++) {
+    if (serverName[station_id].length() > 0 && (millis() - lastTime) > timerDelay) {
+        WiFiClient client;
+        HTTPClient http;
   
-      // Send HTTP GET request
-      int httpResponseCode = http.GET();
-      
-      if (httpResponseCode>0) {
-        Serial.print("HTTP Response code: ");
-        Serial.println(httpResponseCode);
-        String payload = http.getString();
-        Serial.println(payload);
-        lcd.setCursor(0, 0);
-        if (payload.length() > 2) {
-          const char *pcstr = payload.c_str();
-          int dplace = payload.length() - 3;
-          if (pcstr[0] == '-') {
-            lcd.print("-");
-            pcstr++;
-            dplace--;
+        String serverPath = serverName[station_id];
+  
+        Serial.println(serverPath.c_str());
+        // Your Domain name with URL path or IP address with path
+        http.begin(client, serverPath.c_str());
+    
+        // Send HTTP GET request
+        int httpResponseCode = http.GET();
+        
+        if (httpResponseCode>0) {
+          Serial.print("HTTP Response code: ");
+          Serial.println(httpResponseCode);
+          String recv_payload = http.getString();
+          char disp = recv_payload[0];
+          String payload = recv_payload.substring(1, recv_payload.length());
+          
+          Serial.println(payload);
+          if (disp == 'B') {
+            lcd.setCursor(8, 0);
+          } else if (disp == 'C') {
+            lcd.setCursor(0, 1);
+          } else if (disp == 'D') {
+            lcd.setCursor(8, 1);
           } else {
-            lcd.print("+");
+            lcd.setCursor(0, 0);
           }
-          for (int i = (dplace+3); i < 5; i++) {
-            lcd.print("0");
-          }
-          for (int i = 0;i < (dplace+3);i++)
-          {
-            lcd.print(pcstr[i]);
-            if (i == dplace)
-              lcd.print(".");
-          }
-        } else {
-          const char *pcstr = payload.c_str();
-          int dlen = payload.length();
-          if (pcstr[0] == '-') {
-            lcd.print("-");
-            dlen--;
-            pcstr++;
+          
+          if (payload.length() > 2) {
+            const char *pcstr = payload.c_str();
+            int dplace = payload.length() - 3;
+            if (pcstr[0] == '-') {
+              lcd.print("-");
+              pcstr++;
+              dplace--;
+            } else {
+              lcd.print("+");
+            }
+            for (int i = (dplace+3); i < 5; i++) {
+              lcd.print("0");
+            }
+            for (int i = 0;i < (dplace+3);i++)
+            {
+              lcd.print(pcstr[i]);
+              if (i == dplace)
+                lcd.print(".");
+            }
           } else {
-            lcd.print("+");
+            const char *pcstr = payload.c_str();
+            int dlen = payload.length();
+            if (pcstr[0] == '-') {
+              lcd.print("-");
+              dlen--;
+              pcstr++;
+            } else {
+              lcd.print("+");
+            }
+            if (dlen == 1)
+            {
+              lcd.print("000.0");
+            }
+            else
+            {
+              lcd.print("000.");
+            }
+            lcd.print(pcstr);
           }
-          if (dlen == 1)
-          {
-            lcd.print("000.0");
-          }
-          else
-          {
-            lcd.print("000.");
-          }
-          lcd.print(pcstr);
         }
-      }
-      else {
-        Serial.print("Error code: ");
-        Serial.println(httpResponseCode);
-      }
-      // Free resources
-      http.end();
-    lastTime = millis();
+        else {
+          Serial.print("Error code: ");
+          Serial.println(httpResponseCode);
+        }
+        // Free resources
+        http.end();
+      lastTime = millis();
+    }
   }
+
 }

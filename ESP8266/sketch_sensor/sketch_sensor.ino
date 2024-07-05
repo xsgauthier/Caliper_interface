@@ -4,6 +4,7 @@
 //const char* ssid = "BELL729";
 const char* ssid = "ESP-DRO-01";
 const char* password = "3E345AF3213F";
+const char disp = 'B'; // Display offset ABCD
 
 #define D1 5
 #define D2 4
@@ -46,7 +47,7 @@ AsyncWebServer server(80);
 long pos;
 
 String readPos() {
-  return String(pos);
+  return String(disp) + String(pos);
 }
 
 void setup() {
