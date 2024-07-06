@@ -24,30 +24,26 @@ unsigned long timerDelay = 200;
 const int rs = D0, en = D2, d4 = D3, d5 = D4, d6 = D5, d7 = D6;
 LiquidCrystal lcd(rs, en, d4, d5, d6, d7);
 
-boolean waitingDHCP=false;
-char last_mac[18];
-String serverName[] = { "", "", "", "" };
+boolean waitingDHCP[4] = { false, false, false, false };
+char last_mac[4][18];
+String serverName[4] = { "", "", "", "" };
+int registered_stations = 0;
+char station_disp[4] = { 0, 0, 0, 0 };
 
-boolean deviceIP(char* mac_device, String &cb) {
+boolean deviceIP(int i, char* mac_device, String &cb) {
 
   struct station_info *station_list = wifi_softap_get_station_info();
-  int station_id = 0;
   while (station_list != NULL) {
     char station_mac[18] = {0}; sprintf(station_mac, "%02X:%02X:%02X:%02X:%02X:%02X", MAC2STR(station_list->bssid));
     String station_ip = IPAddress((&station_list->ip)->addr).toString();
 
     if (strcmp(mac_device,station_mac)==0) {
-      waitingDHCP=false;
+      waitingDHCP[i] = false;
       cb = station_ip;
-
-      if (station_id < 4) {
-        serverName[station_id] = String("http://") + station_ip + String("/pos");
-      }
-      
+      serverName[i] = String("http://") + station_ip + String("/pos");
       return true;
     } 
 
-    station_id++;
     station_list = STAILQ_NEXT(station_list, next);
   }
 
@@ -58,11 +54,13 @@ boolean deviceIP(char* mac_device, String &cb) {
 
 // Manage incoming device connection on ESP access point
 void onNewStation(WiFiEventSoftAPModeStationConnected sta_info) {
+  const int i = registered_stations;
+  registered_stations++;
   Serial.println("New Station :");
-  sprintf(last_mac,"%02X:%02X:%02X:%02X:%02X:%02X", MAC2STR(sta_info.mac));
+  sprintf(last_mac[i],"%02X:%02X:%02X:%02X:%02X:%02X", MAC2STR(sta_info.mac));
   Serial.printf("MAC address : %s\n",last_mac);
   Serial.printf("Id : %d\n", sta_info.aid);
-  waitingDHCP=true;
+  waitingDHCP[i] = true; // wait for the ip to be devivered to the station (in main loop) 
 }
 
 void setup() {
@@ -104,19 +102,20 @@ void setup() {
 }
 
 void loop() {
-  if (waitingDHCP) {
-    String cb;
-    if (deviceIP(last_mac,cb)) {
-      Serial.println("Ip address :");
-      Serial.println(cb); //do something
-      lcd.clear();
-    } else {
-      //Serial.println("Problem during ip address request :");
-      //Serial.println(cb); //do something else
+  for (int i = 0; i < registered_stations;i++) {
+    if (waitingDHCP[i]) {
+      String cb;
+      if (deviceIP(i, last_mac[i],cb)) {
+        Serial.println("Ip address :");
+        Serial.println(cb); //do something
+        lcd.clear();
+      } else {
+        //Serial.println("Problem during ip address request :");
+        //Serial.println(cb); //do something else
+      }
     }
   }
-
-  
+ 
   // put your main code here, to run repeatedly:
   for (int station_id = 0;station_id < 4; station_id++) {
     if (serverName[station_id].length() > 0 && (millis() - lastTime) > timerDelay) {
@@ -137,6 +136,7 @@ void loop() {
           Serial.println(httpResponseCode);
           String recv_payload = http.getString();
           char disp = recv_payload[0];
+          station_disp[station_id] = disp;
           String payload = recv_payload.substring(1, recv_payload.length());
           
           Serial.println(payload);
@@ -193,6 +193,19 @@ void loop() {
         else {
           Serial.print("Error code: ");
           Serial.println(httpResponseCode);
+          char disp = station_disp[station_id];
+          if (disp > 0) {
+          if (disp == 'B') {
+            lcd.setCursor(8, 0);
+          } else if (disp == 'C') {
+            lcd.setCursor(0, 1);
+          } else if (disp == 'D') {
+            lcd.setCursor(8, 1);
+          } else {
+            lcd.setCursor(0, 0);
+          }
+          lcd.print("E---.--");
+          }
         }
         // Free resources
         http.end();
