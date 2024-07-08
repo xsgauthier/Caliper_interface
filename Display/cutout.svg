@@ -1,0 +1,9 @@
+<?xml version="1.0"?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:lc="http://www.librecad.org" xmlns:xlink="http://www.w3.org/1999/xlink" width="70.2mm" height="26.3mm" viewBox="0 0 70.2 26.3">
+    <g lc:layername="cutout" lc:is_locked="false" lc:is_construction="false" fill="none" stroke="black" stroke-width="1">
+        <line x1="0" y1="0" x2="70.2" y2="0"/>
+        <line x1="70.2" y1="0" x2="70.2" y2="26.3"/>
+        <line x1="70.2" y1="26.3" x2="0" y2="26.3"/>
+        <line x1="0" y1="26.3" x2="0" y2="0"/>
+    </g>
+</svg>

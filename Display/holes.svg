@@ -1,0 +1,9 @@
+<?xml version="1.0"?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:lc="http://www.librecad.org" xmlns:xlink="http://www.w3.org/1999/xlink" width="77.5mm" height="38.5mm" viewBox="0 0 77.5 38.5">
+    <g lc:layername="holes" lc:is_locked="false" lc:is_construction="false" fill="none" stroke="black" stroke-width="1">
+        <circle cx="76.25" cy="1.25" r="1.25"/>
+        <circle cx="1.25" cy="1.25" r="1.25"/>
+        <circle cx="1.25" cy="37.25" r="1.25"/>
+        <circle cx="76.25" cy="37.25" r="1.25"/>
+    </g>
+</svg>
